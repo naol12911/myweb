@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luxury Speech Assistant</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* Removed justify-content to prevent it from centering vertically */
+            min-height: 100vh; /* Ensure body takes up at least the full height */
+        }
+        .body2{
+       width: 100%;
+        }
+        #speakBtn {
+            padding: 15px 25px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            transition: background-color 0.3s;
+        }
+        #speakBtn:hover {
+            background-color: #0056b3;
+        }
+        .message-container {
+            width: 100%;
+            max-width: 10000px;
+            /* Set height and overflow for scrolling */
+            max-height: 70vh; /* Adjust based on your needs */
+            overflow-y: auto; /* Enables vertical scrolling */
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 20px; /* Added padding for inner spacing */
+        }
+        .message {
+            background-color: #333;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            word-wrap: break-word;
+        }
+        .recognized {
+            align-self: flex-end;
+        }
+        .response {
+            align-self: flex-start;
+            color: #007BFF;
+        }
+    </style>
+    
+</head>
+<body>
+    <section>
+        <h1>Welcome!!</h1>
+    </section>
+    <button id="speakBtn">Speak</button>
+    <div class="message-container"></div>
+    <video id="bgVideo" loop muted style="position: fixed; right: 0; bottom: 0; min-width: 100%; min-height: 100%; z-index: -1;">
+        <source src="background-video.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    
+    <script>
+const speakBtn = document.getElementById("speakBtn");
+const messageContainer = document.querySelector('.message-container');
+const synth = window.speechSynthesis;
+
+let isListeningForCommand = false;
+
+function addMessage(text, className) {
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('message', className);
+    messageDiv.innerText = text;
+    messageContainer.appendChild(messageDiv);
+    // Auto-scroll to the bottom of the message container
+    messageContainer.scrollTop = messageContainer.scrollHeight;
+}
+
+const phrasesToResponses = {
+    "hello": "Hello! How can I help you?",
+    "what is your name": "I am voice AI that created by unifarm school students and my name is uni ,Feel free to ask.",
+    "how are you": "I'm a computer program, so I don't have feelings but thanks for asking I'm fantastic, thank you for asking!",
+    "what about the classrooms":"While the website mentions classrooms on the homepage, details about their quality are likely absent. You can explore the About Us section for pictures or descriptions that might give you an idea.",
+"what about the learning process":"Information about the teaching approach or curriculum might be on the About Us page. Consider contacting the school through the Contact Us section for specifics.",
+"is the classroooms are good":"While the website mentions classrooms on the homepage, details about their quality are likely absent. You can explore the About Us section for pictures or descriptions that might give you an idea.",
+"is the learning process good":"Information about the teaching approach or curriculum might be on the About Us page. Consider contacting the school through the Contact Us section for specifics.",
+"what about the teachers":"The website doesn't explicitly mention teacher qualifications. You can try the About Us page for general information about the faculty or contact the school directly.",
+"is the teachers have good educational level":"The website doesn't explicitly mention teacher qualifications. You can try the About Us page for general information about the faculty or contact the school directly.",
+"what about the sport field":"Similar to classrooms, details about the sports field might be limited. Check the  About Us page for pictures or descriptions.",
+"is the sport field good for students":"Similar to classrooms, details about the sports field might be limited. Check the About Us page for pictures or descriptions.",
+"what about the rule and regulations":"yes,the school have good rules and regulations that are effective",
+"is the rule and regulations are effective":"the schoolhave good rules and regulations that are effective",
+"what about safty and health":" The website might not directly address safety measures. The About Us page could mention general policies, but contacting the school is recommended for specifics.",
+"is the school safe to the students":" The website might not directly address safety measures. The About Us page could mention general policies, but contacting the school is recommended for specifics.",
+"what about the water pipe":"Information about water availability might not be readily available. Consider contacting the school for details.",
+"does water supply sufficient to the students":"Information about water availability might not be readily available. Consider contacting the school for details.",
+"what about the lablatory class":"The website might not mention labs directly. The About Us page could have information, but contacting the school is best.",
+"is the lablatory class helpful for the students learning process":"The website might not mention labs directly. The About Us page could have information, but contacting the school is best.",
+"what about the library":"Similar to labs, the library might not be explicitly mentioned. The About Us page could provide clues, but contacting the school is better.",
+"is the library good for supporting students  study":"Similar to labs, the library might not be explicitly mentioned. The About Us page could provide clues, but contacting the school is better.",
+"what about ict class":"The website might not have a dedicated page for ICT classes. The About Us page could offer insights, but contacting the school is best.",
+"is the ict class helpful to get more knowledge about technology":"The website might not have a dedicated page for ICT classes. The About Us page could offer insights, but contacting the school is best.",
+"what about minimedia class":"Similar to ICT, information about multimedia classes might be limited. The About Us page could be helpful, but contacting the school is best",
+"is minimedia class good for presenting some talents and programs":"Similar to ICT, information about multimedia classes might be limited. The About Us page could be helpful, but contacting the school is best",
+"what about the first aid":"There might not be a dedicated page for first aid. The About Us page could mention general policies, but contacting the school is recommended.",
+"is first aid class good":"There might not be a dedicated page for first aid. The About Us page could mention general policies, but contacting the school is recommended.",
+"what about launch class":" Information about the lunch program or cafeteria might be limited. The About Us page could be helpful, but contacting the school is best.",
+"is the launch class has good environment":" Information about the lunch program or cafeteria might be limited. The About Us page could be helpful, but contacting the school is best.",
+"what about teaching aid":"The website might not mention specific teaching aids. The About Us page could offer insights, but contacting the school is best.Transportation",
+"is the teaching aid good for students learning process":"",
+"what about school bus":"Information about a school bus service likely won't be on the website. Contact the school directly for details.",
+"is there any any school bus for students":"Information about a school bus service likely won't be on the website. Contact the school directly for details.",
+"what about virtue ethics teaching":"our school focus on virtue ethics in developing students.",
+"what about the payment":"The website should have a dedicated Fee or Payment page outlining accepted payment methods and any associated fees.",
+    "what about general activities of the school": "we have general activitiesthat includes a combination of daily routines, enriching educational journeys, and joyful activities that promote both academic achievement and overall well-being.Daily Life:Our school day is structured with clear routines that provide students and teachers with a sense of stability and predictability. These routines allow for focused learning and efficient use of time.Educational Journeys:We go beyond the textbook! Our Educational Journey program offers unique learning experiences that spark curiosity and make learning fun. Here's an example:Recent Journey: A visit to the Ethiopian Air Force HQ, where students explored fighter aircraft, military defense systems, and gained a deeper understanding of national security.Another Example: A trip to the Hager Fikir Theater, where students learned about traditional Ethiopian performing arts (PVA) and experienced the rich cultural heritage firsthand.These journeys allow students to connect classroom concepts to the real world, fostering a deeper understanding and appreciation for different subjects.Levels of Coordination:Our school implements a collaborative learning approach where students of all levels are actively engaged in the learning process. This fosters communication, teamwork, and allows everyone to gain valuable knowledge from each other's perspectives.Joyful Times:Learning isn't just about textbooks! We believe in creating a fun and engaging environment where students can unwind and express themselves. Our school offers a variety of extracurricular activities that cater to diverse interests, such as:Football Games: Building teamwork and sportsmanship through friendly competition.Dances: Celebrating school spirit and cultural diversity through music and movement.Theatre: Encouraging creativity and self-expression through drama and performances.These activities provide opportunities for students to socialize, de-stress, and develop important skills beyond academics.",
+    "how i can contact": "To contact Unifarm School, you can reach out to their administrative office during their operating hours. They should have contact information available on their official website or any other official communication channels. You may find their phone number or email address to get in touch with the school's staff. It is advisable to contact them directly for any inquiries or to schedule a visit to the school.",
+    "how can i register": "To register at Unifarm School, you can follow the registration criteria and payment details provided by the school. These details will help streamline the enrollment process for prospective students. It is recommended to reach out to the school directly for specific instructions on how to register. They will be able to provide you with the necessary forms and guidance to complete the registration process successfully.",
+    "how is the  toilet": "Having clean and accessible toilets is important for the well-being of everyone in the school. It allows students and teachers to take care of basic needs without disruption, promoting a more comfortable and positive learning environment.",
+    "what about the toilet":"Toilets are essential for good hygiene and health in our school. They allow students and teachers to use the restroom comfortably and privately, which helps prevent the spread of germs and keeps everyone healthy and focused on learning.",
+    "what is uniform school value": "Unifarm School values learning quality and the cultivation of virtuous citizens. They believe in instilling trust and responsibility in their students. Additionally, the school places importance on maintaining clean facilities and being prepared with first aid resources to ensure the health and well-being of their students. These values reflect their commitment to providing a nurturing and supportive environment for students to thrive academically and personally.",
+    "what is uniform school mission": "Unifarm School's mission is to prioritize learning quality and provide a holistic education to students. They aim to create an environment that fosters the development of knowledge, skills, and values. The school is committed to nurturing students' intellectual, social, emotional, and physical well-being. Through a comprehensive curriculum and engaging activities, Unifarm School strives to prepare students to become well-rounded individuals who contribute positively to society.",
+    "what is uniform school vision": "Unifarm School's vision is to provide equitable and quality education to all students. They strive to develop students' knowledge and career skills while also cultivating virtuous citizens through trust and responsibility. Their vision is to create an educational environment that prepares students to become successful and responsible individuals in the future.",
+    "who is uniform school": "Unifarm School is an educational institution that focuses on providing a holistic education to students. They have a clear vision and mission statement that emphasizes equitable and quality education. The school aims to develop students' knowledge and career skills while also cultivating virtuous citizens through trust and responsibility. They prioritize learning quality and maintain clean facilities with first aid readiness to ensure students' health and well-being. The school offers a curriculum that engages students in various subjects and activities, including science, ethics, and language skills. Overall, Unifarm School is dedicated to educating the whole child.",
+    "tell me about uniform school": "Unifarm School is an educational institution that focuses on providing a holistic education to students. It offers a curriculum that engages students in various subjects and activities, including science, ethics, and language skills. The school is dedicated to educating the whole child and aims to develop students' skills and passions. It has qualified teachers and state-of-the-art facilities to support students' learning and success.",
+    "what about the orgin ofunifarm school":"",
+"when was unifarm chool found":"",
+"what about the vision of the school":"Unifarm School's vision is to provide equitable and quality education to all students. They strive to develop students' knowledge and career skills while also cultivating virtuous citizens through trust and responsibility. Their vision is to create an educational environment that prepares students to become successful and responsible individuals in the future.",
+"what about the mission of the school":"Unifarm School's mission is to prioritize learning quality and provide a holistic education to students. They aim to create an environment that fosters the development of knowledge, skills, and values. The school is committed to nurturing students' intellectual, social, emotional, and physical well-being. Through a comprehensive curriculum and engaging activities, Unifarm School strives to prepare students to become well-rounded individuals who contribute positively to society.",
+"what about the value of the school":"Unifarm School values learning quality and the cultivation of virtuous citizens. They believe in instilling trust and responsibility in their students. Additionally, the school places importance on maintaining clean facilities and being prepared with first aid resources to ensure the health and well-being of their students. These values reflect their commitment to providing a nurturing and supportive environment for students to thrive academically and personally.",
+    "goodbye": "Farewell, until we speak again!"
+};
+
+function speak(text) {
+    const utterThis = new SpeechSynthesisUtterance(text);
+    synth.speak(utterThis);
+    addMessage("AI: " + text, 'response');
+}
+
+    
+function handleCommand(text) {
+            if (text in phrasesToResponses) {
+                speak(phrasesToResponses[text]);
+                if (text === "open youtube") {
+                    window.open("https://www.youtube.com", "_blank");
+                }
+            } else {
+                speak("I'm sorry, I don't understand that command.");
+            }
+        }
+
+
+speakBtn.addEventListener("click", () => {
+    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-US';
+        recognition.continuous = true; // Continuously listen for commands
+        recognition.interimResults = false;
+
+        recognition.onresult = function(event) {
+            const text = event.results[event.resultIndex][0].transcript.toLowerCase().trim();
+            addMessage("You: " + text, 'recognized'); // Display recognized text in the message container
+
+            // Process the commands only if "uni" wake word is heard or if it's already listening
+            if (!isListeningForCommand && text.includes("uni")) {
+                isListeningForCommand = true;
+                speak("I'm listening...");
+                return;
+            }
+
+            if (isListeningForCommand) {
+                let responseFound = false;
+
+                for (const [phrase, response] of Object.entries(phrasesToResponses)) {
+                    if (text.includes(phrase)) {
+                        speak(response);
+                        responseFound = true;
+                        if (phrase === "goodbye") {
+                            isListeningForCommand = false; // Reset this flag
+                            recognition.stop(); // Stop listening here
+                            break;
+                        }
+                    }
+                }
+
+                if (!responseFound) {
+                    speak("I'm sorry, I don't understand that command.");
+                }
+            }
+        };
+
+        recognition.onerror = function(event) {
+            console.error("Speech recognition error: " + event.error);
+        };
+
+        recognition.start();
+    } else {
+        alert("Sorry, your browser does not support speech recognition.");
+    }
+});
+
+
+    </script>
+</body>
+</html>
